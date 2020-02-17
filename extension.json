@@ -1,0 +1,8 @@
+{
+  "id": "contentful-ui-link",
+  "name": "contentful-ui-link",
+  "srcdoc": "./build/index.html",
+  "fieldTypes": [
+    "Object"
+  ]
+}
