@@ -7,7 +7,12 @@ import {
   FieldGroup,
   RadioButtonField,
   EntryCard,
-  Notification
+  Notification,
+  Dropdown,
+  DropdownList,
+  DropdownListItem,
+  FormLabel,
+  HelpText
 } from '@contentful/forma-36-react-components';
 import { init } from 'contentful-ui-extensions-sdk';
 import '@contentful/forma-36-react-components/dist/styles.css';
@@ -16,6 +21,11 @@ import './index.css';
 const LINK_TYPE = 'linkType';
 const LINK_TYPE_INTERNAL = 'internal';
 const LINK_TYPE_EXTERNAL = 'external';
+
+const TARGET_TYPE_BLANK = '_blank';
+const TARGET_TYPE_SELF = '_self';
+const TARGET_TYPE_NICE_BLANK = 'New Tab';
+const TARGET_TYPE_NICE_SELF = 'Internal';
 
 function UiExtension(props) {
   console.log('props.sdk.field => ', props.sdk.field);
@@ -26,6 +36,8 @@ function UiExtension(props) {
   const [urlValue, setUrlValue] = useState('');
   const [urlTitleValue, setUrlTitleValue] = useState('');
   const [entryCard, setEntryCard] = useState(null);
+  const [targetType, setTargetType] = useState('');
+  const [dropdownIsOpen, setDropdownIsOpen] = useState(false);
 
   useEffect(() => {
     if (props.sdk.window) {
@@ -40,6 +52,11 @@ function UiExtension(props) {
     if (link_obj) {
       setUrlValue(link_obj.url);
       setUrlTitleValue(link_obj.title);
+      setTargetType(link_obj.target);
+
+      if (!targetType) {
+        setTargetType(TARGET_TYPE_BLANK);
+      }
     }
 
     setEntryCard(props.sdk.field.getValue().entry);
@@ -54,6 +71,7 @@ function UiExtension(props) {
     setUrlTitleValue('');
     setUrlValue('');
     setEntryCard(null);
+    setTargetType(TARGET_TYPE_BLANK);
     setValue(props.sdk.field.getValue());
   }
 
@@ -67,6 +85,7 @@ function UiExtension(props) {
       nextState.entry = null;
     } else if (type_value === LINK_TYPE_EXTERNAL) {
       nextState.link = null;
+      setTargetType(TARGET_TYPE_BLANK);
     }
 
     props.sdk.field.setValue(nextState);
@@ -80,7 +99,8 @@ function UiExtension(props) {
       ...value,
       link: {
         url: url_value,
-        title: urlTitleValue
+        title: urlTitleValue,
+        target: targetType
       }
     });
     setValue(props.sdk.field.getValue());
@@ -93,7 +113,8 @@ function UiExtension(props) {
       ...value,
       link: {
         url: urlValue,
-        title: url_title_value
+        title: url_title_value,
+        target: targetType
       }
     });
     setValue(props.sdk.field.getValue());
@@ -185,6 +206,21 @@ function UiExtension(props) {
     return <EntryCard title={entryCard.title} contentType={entryCard.contentType} size="small" />;
   }
 
+  function handleTargetType(type) {
+    setTargetType(type);
+    setDropdownIsOpen(false);
+
+    props.sdk.field.setValue({
+      ...value,
+      link: {
+        url: urlValue,
+        title: urlTitleValue,
+        target: type
+      }
+    });
+    setValue(props.sdk.field.getValue());
+  }
+
   return (
     <Fragment>
       <FieldGroup>
@@ -255,6 +291,37 @@ function UiExtension(props) {
               }}
               onChange={e => handleExternalUrlTitleChange(e.target.value)}
             />
+            <FormLabel htmlFor="location_target">Location</FormLabel>
+            <Dropdown
+              isOpen={dropdownIsOpen}
+              onClose={() => setDropdownIsOpen(false)}
+              key={Date.now()} // Force Reinit
+              id="location_target"
+              position="bottom-left"
+              toggleElement={
+                <Button
+                  size="small"
+                  buttonType="muted"
+                  position="bottom-left"
+                  indicateDropdown
+                  onClick={() => setDropdownIsOpen(!dropdownIsOpen)}>
+                  {targetType === TARGET_TYPE_SELF
+                    ? TARGET_TYPE_NICE_SELF
+                    : targetType === TARGET_TYPE_BLANK
+                    ? TARGET_TYPE_NICE_BLANK
+                    : null}
+                </Button>
+              }>
+              <DropdownList>
+                <DropdownListItem onClick={() => handleTargetType(TARGET_TYPE_BLANK)}>
+                  {TARGET_TYPE_NICE_BLANK}
+                </DropdownListItem>
+                <DropdownListItem onClick={() => handleTargetType(TARGET_TYPE_SELF)}>
+                  {TARGET_TYPE_NICE_SELF}
+                </DropdownListItem>
+              </DropdownList>
+            </Dropdown>
+            <HelpText>By default, the link will open in a New Tab.</HelpText>
           </FieldGroup>
           <FieldGroup>{renderResetButton()}</FieldGroup>
         </Fragment>
